@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FocusMode">
+<meta name="theme-color" content="#0a0a0f">
+<title>FocusMode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: rgba(255,255,255,0.07);
+  --accent: #7c6cfc;
+  --accent2: #fc6c8f;
+  --accent3: #6cfcd4;
+  --text: #f0eeff;
+  --muted: rgba(240,238,255,0.45);
+  --mono: 'Space Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:var(--sans); overflow:hidden; }
+
+/* ── SCREEN MANAGER ── */
+.screen { position:fixed; inset:0; display:flex; flex-direction:column; overflow:hidden; opacity:0; pointer-events:none; transform:translateY(16px); transition:opacity .3s ease, transform .3s ease; }
+.screen.active { opacity:1; pointer-events:all; transform:translateY(0); }
+
+/* ── NAV BAR ── */
+nav { position:fixed; bottom:0; left:0; right:0; padding-bottom:var(--safe-bottom); background:rgba(10,10,15,0.92); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; z-index:100; }
+.nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 0; border:none; background:none; color:var(--muted); font-family:var(--sans); font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; transition:color .2s; }
+.nav-btn.active { color:var(--accent); }
+.nav-btn svg { width:22px; height:22px; stroke-width:1.8; }
+
+/* ── SCROLLABLE CONTENT ── */
+.content { flex:1; overflow-y:auto; overflow-x:hidden; padding:calc(var(--safe-top) + 60px) 20px calc(90px + var(--safe-bottom)); -webkit-overflow-scrolling:touch; }
+.content::-webkit-scrollbar { display:none; }
+
+/* ── TYPOGRAPHY ── */
+h1 { font-size:28px; font-weight:800; line-height:1.1; }
+h2 { font-size:20px; font-weight:700; }
+h3 { font-size:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+
+/* ── HEADER ── */
+.page-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; }
+.greeting { font-size:13px; color:var(--muted); font-family:var(--mono); margin-bottom:4px; }
+.date-chip { font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); padding:4px 10px; border-radius:20px; }
+
+/* ── CARDS ── */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin-bottom:14px; }
+.card-accent { border-color:rgba(124,108,252,0.3); background:rgba(124,108,252,0.08); }
+
+/* ── MISSION CARD ── */
+.mission-card { background:linear-gradient(135deg, #1a1535 0%, #0f1a2e 100%); border:1px solid rgba(124,108,252,0.25); border-radius:20px; padding:22px; margin-bottom:20px; position:relative; overflow:hidden; }
+.mission-card::before { content:''; position:absolute; top:-40px; right:-40px; width:140px; height:140px; background:radial-gradient(circle, rgba(124,108,252,0.2) 0%, transparent 70%); pointer-events:none; }
+.mission-label { font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
+.mission-text { font-size:18px; font-weight:700; line-height:1.3; margin-bottom:16px; }
+.mission-meta { display:flex; gap:10px; }
+.mission-tag { font-size:11px; font-family:var(--mono); color:var(--muted); background:rgba(255,255,255,0.05); padding:3px 10px; border-radius:20px; }
+
+/* ── TASKS ── */
+.task-item { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); cursor:pointer; transition:opacity .2s; }
+.task-item:last-child { border-bottom:none; }
+.task-item.done { opacity:.4; }
+.task-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+.task-item.done .task-check { background:var(--accent3); border-color:var(--accent3); }
+.task-info { flex:1; }
+.task-name { font-size:15px; font-weight:600; transition:text-decoration .2s; }
+.task-item.done .task-name { text-decoration:line-through; }
+.task-sub { font-size:12px; color:var(--muted); font-family:var(--mono); margin-top:2px; }
+.task-time { font-size:11px; font-family:var(--mono); color:var(--muted); }
+.add-task-btn { width:100%; padding:14px; background:rgba(124,108,252,0.1); border:1.5px dashed rgba(124,108,252,0.3); border-radius:14px; color:var(--accent); font-family:var(--sans); font-size:14px; font-weight:600; cursor:pointer; margin-top:10px; transition:background .2s; }
+.add-task-btn:active { background:rgba(124,108,252,0.2); }
+
+/* ── TIMER SCREEN ── */
+.timer-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:32px; }
+.timer-ring-wrap { position:relative; width:240px; height:240px; }
+.timer-ring-wrap svg { transform:rotate(-90deg); }
+.timer-track { fill:none; stroke:var(--surface2); stroke-width:8; }
+.timer-prog { fill:none; stroke:var(--accent); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .5s; }
+.timer-display { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.timer-num { font-family:var(--mono); font-size:48px; font-weight:700; letter-spacing:-.02em; }
+.timer-label { font-size:11px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; margin-top:4px; }
+.timer-mode-row { display:flex; gap:10px; }
+.mode-chip { padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--surface); cursor:pointer; transition:all .2s; }
+.mode-chip.sel { background:var(--accent); border-color:var(--accent); color:#fff; }
+.timer-controls { display:flex; gap:14px; }
+.t-btn { width:64px; height:64px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:24px; transition:transform .15s; }
+.t-btn:active { transform:scale(.92); }
+.t-btn-main { background:var(--accent); color:#fff; width:72px; height:72px; }
+.t-btn-sec { background:var(--surface2); color:var(--text); }
+.vibe-row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.vibe-chip { padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--surface); cursor:pointer; transition:all .2s; }
+.vibe-chip.sel { background:rgba(108,252,212,0.15); border-color:var(--accent3); color:var(--accent3); }
+
+/* ── STATS / STREAK ── */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; }
+.stat-num { font-family:var(--mono); font-size:32px; font-weight:700; }
+.stat-label { font-size:12px; color:var(--muted); margin-top:4px; }
+.xp-bar-wrap { margin-bottom:24px; }
+.xp-meta { display:flex; justify-content:space-between; font-size:12px; font-family:var(--mono); color:var(--muted); margin-bottom:8px; }
+.xp-bar { height:8px; background:var(--surface2); border-radius:10px; overflow:hidden; }
+.xp-fill { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); border-radius:10px; transition:width .8s cubic-bezier(.34,1.56,.64,1); }
+.week-row { display:flex; gap:8px; justify-content:space-between; margin-bottom:24px; }
+.day-dot { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.dot { width:32px; height:32px; border-radius:50%; background:var(--surface2); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:14px; }
+.dot.done { background:rgba(108,252,212,0.2); border-color:var(--accent3); }
+.dot.today { border-color:var(--accent); }
+.day-lbl { font-size:10px; color:var(--muted); font-family:var(--mono); }
+
+/* ── MOTIVATION ── */
+.quote-card { background:linear-gradient(135deg, #120f2a, #0d1a1f); border:1px solid rgba(108,252,212,0.2); border-radius:20px; padding:24px; margin-bottom:16px; position:relative; overflow:hidden; }
+.quote-card::after { content:'"'; position:absolute; bottom:-20px; right:10px; font-size:120px; color:rgba(108,252,212,0.06); font-family:var(--sans); font-weight:800; line-height:1; }
+.quote-text { font-size:18px; font-weight:700; line-height:1.4; margin-bottom:12px; position:relative; z-index:1; }
+.quote-attr { font-size:12px; color:var(--muted); font-family:var(--mono); }
+.remind-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:14px; }
+.remind-icon { font-size:24px; width:44px; height:44px; background:var(--surface2); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.remind-text { font-size:14px; font-weight:600; line-height:1.4; }
+.remind-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+
+/* ── MODAL ── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .25s; }
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal { background:var(--surface); border-radius:24px 24px 0 0; padding:24px 20px calc(24px + var(--safe-bottom)); width:100%; transform:translateY(100%); transition:transform .3s cubic-bezier(.34,1.2,.64,1); }
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px; }
+.modal-title { font-size:18px; font-weight:700; margin-bottom:20px; }
+.inp { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; color:var(--text); font-family:var(--sans); font-size:15px; outline:none; margin-bottom:12px; }
+.inp:focus { border-color:var(--accent); }
+.btn-primary { width:100%; padding:16px; background:var(--accent); border:none; border-radius:14px; color:#fff; font-family:var(--sans); font-size:16px; font-weight:700; cursor:pointer; transition:opacity .2s; }
+.btn-primary:active { opacity:.8; }
+
+/* ── CHECKMARK SVG ── */
+.check-svg { width:12px; height:12px; stroke:var(--bg); stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── NOTIFICATION TOAST ── */
+.toast { position:fixed; top:calc(var(--safe-top) + 16px); left:16px; right:16px; background:var(--surface2); border:1px solid rgba(124,108,252,0.4); border-radius:16px; padding:14px 18px; z-index:300; display:flex; align-items:center; gap:12px; transform:translateY(-120%); transition:transform .4s cubic-bezier(.34,1.2,.64,1); box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+.toast.show { transform:translateY(0); }
+.toast-text { font-size:14px; font-weight:600; }
+.toast-sub { font-size:12px; color:var(--muted); }
+
+/* ── PULSE ANIM ── */
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+.pulse { animation:pulse 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span style="font-size:22px" id="toast-icon">🎯</span>
+  <div>
+    <div class="toast-text" id="toast-title">Nice work!</div>
+    <div class="toast-sub" id="toast-sub">Keep the momentum going.</div>
+  </div>
+</div>
+
+<!-- ══════════ HOME SCREEN ══════════ -->
+<div class="screen active" id="screen-home">
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="greeting" id="greeting-text">// good morning</div>
+        <h1>Today's<br>Mission</h1>
+      </div>
+      <div class="date-chip" id="date-chip">MON 01</div>
+    </div>
+
+    <!-- MISSION BRIEF -->
+    <div class="mission-card">
+      <div class="mission-label">// daily brief</div>
+      <div class="mission-text" id="mission-text">Your 3 priorities are loaded. Focus on one at a time. You've got this.</div>
+      <div class="mission-meta">
+        <span class="mission-tag" id="tasks-done-tag">0 done</span>
+        <span class="mission-tag" id="streak-tag-home">🔥 0 day streak</span>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <h3>// tasks</h3>
+    <div class="card" style="padding:6px 18px">
+      <div id="task-list"></div>
+    </div>
+    <button class="add-task-btn" onclick="openAddTask()">+ add task</button>
+
+    <!-- MINI REMINDER -->
+    <div style="height:20px"></div>
+    <h3>// anchor check</h3>
+    <div class="card card-accent" style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:28px">🧠</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;">What are you working on right now?</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">Tap focus mode to lock in.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TIMER SCREEN ══════════ -->
+<div class="screen" id="screen-timer">
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="greeting">// focus mode</div>
+        <h1>Lock In</h1>
+      </div>
+    </div>
+
+    <div class="timer-wrap">
+      <!-- Mode selector -->
+      <div class="timer-mode-row">
+        <div class="mode-chip sel" onclick="setMode('focus',25,'FOCUS',this)">Focus 25</div>
+        <div class="mode-chip" onclick="setMode('short',5,'SHORT BREAK',this)">Break 5</div>
+        <div class="mode-chip" onclick="setMode('long',15,'LONG BREAK',this)">Break 15</div>
+        <div class="mode-chip" onclick="setMode('custom',0,'CUSTOM',this)">Custom</div>
+      </div>
+
+      <!-- Ring -->
+      <div class="timer-ring-wrap">
+        <svg width="240" height="240" viewBox="0 0 240 240">
+          <circle class="timer-track" cx="120" cy="120" r="108"/>
+          <circle class="timer-prog" id="timer-ring" cx="120" cy="120" r="108"
+            stroke-dasharray="678.58" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-display">
+          <div class="timer-num" id="timer-display">25:00</div>
+          <div class="timer-label" id="timer-mode-label">FOCUS</div>
+        </div>
+      </div>
+
+      <!-- Vibe (music mood) -->
+      <div style="text-align:center">
+        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:10px;">// set your vibe</div>
+        <div class="vibe-row">
+          <div class="vibe-chip sel" onclick="setVibe(this,'lofi')">lofi beats</div>
+          <div class="vibe-chip" onclick="setVibe(this,'trap')">trap mode</div>
+          <div class="vibe-chip" onclick="setVibe(this,'silence')">silence</div>
+          <div class="vibe-chip" onclick="setVibe(this,'nature')">nature</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="timer-controls">
+        <button class="t-btn t-btn-sec" onclick="resetTimer()" title="Reset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button class="t-btn t-btn-main" id="timer-play-btn" onclick="toggleTimer()">
+          <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><polygon points="6,4 20,12 6,20"/></svg>
+        </button>
+        <button class="t-btn t-btn-sec" onclick="skipTimer()" title="Skip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom time input (hidden by default) -->
+    <div id="custom-wrap" style="display:none;margin-top:-20px;">
+      <label style="font-size:13px;color:var(--muted);font-family:var(--mono);">minutes</label>
+      <input class="inp" type="number" id="custom-mins" min="1" max="120" value="30" style="margin-top:8px;" oninput="applyCustom()">
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STATS SCREEN ══════════ -->
+<div class="screen" id="screen-stats">
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="greeting">// your progress</div>
+        <h1>Level Up</h1>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">LEVEL</div>
+        <div style="font-size:28px;font-weight:800;color:var(--accent)" id="level-display">1</div>
+      </div>
+    </div>
+
+    <!-- XP Bar -->
+    <div class="xp-bar-wrap">
+      <div class="xp-meta">
+        <span id="xp-display">0 XP</span>
+        <span id="xp-next">100 XP to next level</span>
+      </div>
+      <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Week dots -->
+    <h3>// this week</h3>
+    <div class="week-row" id="week-row"></div>
+
+    <!-- Stats grid -->
+    <h3>// stats</h3>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-streak">0</div>
+        <div class="stat-label">🔥 Day streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-tasks">0</div>
+        <div class="stat-label">✅ Tasks done</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-sessions">0</div>
+        <div class="stat-label">⏱ Focus sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-mins">0</div>
+        <div class="stat-label">🎯 Focus minutes</div>
+      </div>
+    </div>
+
+    <!-- Reset -->
+    <button onclick="resetStats()" style="width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:var(--sans);font-size:13px;cursor:pointer;margin-top:8px;">reset all data</button>
+  </div>
+</div>
+
+<!-- ══════════ MOTIVATION SCREEN ══════════ -->
+<div class="screen" id="screen-motive">
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="greeting">// fuel up</div>
+        <h1>Stay Sharp</h1>
+      </div>
+    </div>
+
+    <!-- Quote -->
+    <div class="quote-card">
+      <div class="quote-text" id="quote-text">"The secret to getting ahead is getting started."</div>
+      <div class="quote-attr" id="quote-attr">— Mark Twain</div>
+    </div>
+    <button onclick="newQuote()" style="width:100%;padding:13px;background:rgba(108,252,212,0.08);border:1px solid rgba(108,252,212,0.2);border-radius:14px;color:var(--accent3);font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:24px;">new quote ↺</button>
+
+    <!-- Reminders -->
+    <h3>// remember this</h3>
+    <div id="reminders-list"></div>
+
+    <!-- 2-min rule -->
+    <div class="card" style="margin-top:4px;">
+      <div style="font-size:13px;color:var(--accent);font-family:var(--mono);margin-bottom:8px;">// 2-minute rule</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Stuck? Just start for 2 minutes.</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;">You don't have to finish. You just have to begin. Set the timer for 2 minutes and do anything.</div>
+      <button onclick="twoMinRule()" style="margin-top:14px;padding:11px 20px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;">Start 2-min timer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ NAV ══════════ -->
+<nav>
+  <button class="nav-btn active" onclick="goTo('home')" id="nav-home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    Home
+  </button>
+  <button class="nav-btn" onclick="goTo('timer')" id="nav-timer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+    Focus
+  </button>
+  <button class="nav-btn" onclick="goTo('stats')" id="nav-stats">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Stats
+  </button>
+  <button class="nav-btn" onclick="goTo('motive')" id="nav-motive">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+    Fuel
+  </button>
+</nav>
+
+<!-- ══════════ ADD TASK MODAL ══════════ -->
+<div class="modal-overlay" id="add-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Task</div>
+    <input class="inp" type="text" id="task-inp" placeholder="What do you need to do?">
+    <input class="inp" type="text" id="task-sub-inp" placeholder="Subject / context (optional)">
+    <input class="inp" type="text" id="task-time-inp" placeholder="Due time e.g. 4:00 PM (optional)">
+    <button class="btn-primary" onclick="addTask()">Add Task</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+//  STATE
+// ══════════════════════════════
+const STATE_KEY = 'focusmode_v1';
+let state = {
+  tasks: [],
+  streak: 0,
+  lastActiveDate: null,
+  xp: 0,
+  totalTasksDone: 0,
+  focusSessions: 0,
+  focusMins: 0,
+  weekDone: [false,false,false,false,false,false,false],
+  quoteIndex: 0,
+};
+
+function load() {
+  try { const s = localStorage.getItem(STATE_KEY); if(s) state = {...state,...JSON.parse(s)}; } catch(e){}
+}
+function save() {
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(e){}
+}
+load();
+
+// Check / update streak
+(function checkStreak(){
+  const today = new Date().toDateString();
+  if(state.lastActiveDate !== today) {
+    const yesterday = new Date(Date.now()-86400000).toDateString();
+    if(state.lastActiveDate === yesterday) {
+      // streak continues but don't increment until task done today
+    } else if(state.lastActiveDate && state.lastActiveDate !== today) {
+      // streak broken
+      const daysSince = Math.floor((Date.now()-new Date(state.lastActiveDate))/(86400000));
+      if(daysSince > 1) state.streak = 0;
+    }
+  }
+})();
+
+// ══════════════════════════════
+//  QUOTES & REMINDERS
+// ══════════════════════════════
+const QUOTES = [
+  {t:"The secret to getting ahead is getting started.", a:"Mark Twain"},
+  {t:"You don't have to be perfect to be amazing.", a:"Unknown"},
+  {t:"Small steps every day add up to big results.", a:"Unknown"},
+  {t:"Your brain works differently — that's a feature, not a bug.", a:"Unknown"},
+  {t:"Code it. Beat it. Build it. One step at a time.", a:"FocusMode"},
+  {t:"Discipline is just choosing between what you want now and what you want most.", a:"Unknown"},
+  {t:"You are not behind. You are on your own timeline.", a:"Unknown"},
+  {t:"The best time to start was yesterday. The second best time is now.", a:"Unknown"},
+  {t:"Every expert was once a beginner who refused to quit.", a:"Unknown"},
+  {t:"Creativity is intelligence having fun.", a:"Albert Einstein"},
+  {t:"Done is better than perfect.", a:"Sheryl Sandberg"},
+  {t:"The people who are crazy enough to think they can change the world usually do.", a:"Steve Jobs"},
+];
+const REMINDERS = [
+  {icon:"⏰", t:"Time blindness is real", s:"Set timers before you start, not when you're already late."},
+  {icon:"🎯", t:"One thing at a time", s:"Your brain loves depth — give it permission to go deep on one task."},
+  {icon:"🎵", t:"Music = focus fuel", s:"Put on your beats. The right sound can lock you in."},
+  {icon:"💡", t:"Zoning out is normal", s:"When you drift, just notice it and return. No judgment."},
+  {icon:"🏆", t:"Progress > perfection", s:"A messy first draft beats a perfect blank page every time."},
+  {icon:"🔋", t:"Your energy has patterns", s:"Notice when you're sharpest. Guard that time for hard tasks."},
+];
+
+// ══════════════════════════════
+//  UI INIT
+// ══════════════════════════════
+function init() {
+  updateGreeting();
+  renderTasks();
+  renderStats();
+  renderMotivation();
+  renderWeek();
+}
+
+function updateGreeting() {
+  const h = new Date().getHours();
+  const greetings = ['// late night', '// early riser', '// good morning', '// good afternoon', '// good evening'];
+  const g = h < 4 ? 0 : h < 7 ? 1 : h < 12 ? 2 : h < 17 ? 3 : 4;
+  document.getElementById('greeting-text').textContent = greetings[g];
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const d = new Date();
+  document.getElementById('date-chip').textContent = `${days[d.getDay()]} ${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════
+//  TASKS
+// ══════════════════════════════
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  if(state.tasks.length === 0) {
+    list.innerHTML = '<div style="padding:20px 0;text-align:center;color:var(--muted);font-size:14px;font-family:var(--mono);">// no tasks yet — add one!</div>';
+  } else {
+    list.innerHTML = state.tasks.map((t,i) => `
+      <div class="task-item ${t.done?'done':''}" onclick="toggleTask(${i})">
+        <div class="task-check">
+          ${t.done?`<svg class="check-svg" viewBox="0 0 12 12"><polyline points="1,6 4,9 11,3"/></svg>`:''}
+        </div>
+        <div class="task-info">
+          <div class="task-name">${t.name}</div>
+          ${t.sub?`<div class="task-sub">${t.sub}</div>`:''}
+        </div>
+        ${t.time?`<div class="task-time">${t.time}</div>`:''}
+      </div>`).join('');
+  }
+  const done = state.tasks.filter(t=>t.done).length;
+  document.getElementById('tasks-done-tag').textContent = `${done}/${state.tasks.length} done`;
+  document.getElementById('streak-tag-home').textContent = `🔥 ${state.streak} day streak`;
+}
+
+function toggleTask(i) {
+  const was = state.tasks[i].done;
+  state.tasks[i].done = !was;
+  if(!was) {
+    addXP(20);
+    state.totalTasksDone++;
+    updateStreak();
+    showToast('✅','Task complete!','+20 XP earned');
+  }
+  save(); renderTasks(); renderStats();
+}
+
+function openAddTask() {
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('task-inp').focus(),350);
+}
+function closeModal(e) {
+  if(e.target.id==='add-modal') document.getElementById('add-modal').classList.remove('open');
+}
+function addTask() {
+  const name = document.getElementById('task-inp').value.trim();
+  if(!name) return;
+  state.tasks.push({
+    name,
+    sub: document.getElementById('task-sub-inp').value.trim(),
+    time: document.getElementById('task-time-inp').value.trim(),
+    done: false,
+  });
+  document.getElementById('task-inp').value='';
+  document.getElementById('task-sub-inp').value='';
+  document.getElementById('task-time-inp').value='';
+  document.getElementById('add-modal').classList.remove('open');
+  save(); renderTasks();
+  showToast('📋','Task added!','You got this.');
+}
+
+// ══════════════════════════════
+//  TIMER
+// ══════════════════════════════
+let timerMins = 25, timerSecs = 0, timerTotal = 1500, timerRunning = false, timerInterval = null;
+let currentMode = 'focus';
+
+const ring = document.getElementById('timer-ring');
+const CIRC = 678.58;
+
+function setMode(mode, mins, label, el) {
+  document.querySelectorAll('.mode-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  currentMode = mode;
+  document.getElementById('custom-wrap').style.display = mode==='custom'?'block':'none';
+  if(mode!=='custom') {
+    resetTimerTo(mins*60, label);
+  }
+}
+function applyCustom() {
+  const m = parseInt(document.getElementById('custom-mins').value)||1;
+  resetTimerTo(m*60,'CUSTOM');
+}
+function resetTimerTo(totalSecs, label) {
+  clearInterval(timerInterval); timerRunning=false;
+  timerTotal=totalSecs; timerMins=Math.floor(totalSecs/60); timerSecs=totalSecs%60;
+  updateTimerDisplay();
+  document.getElementById('timer-mode-label').textContent=label;
+  ring.style.strokeDashoffset='0';
+  updatePlayIcon();
+}
+function updateTimerDisplay() {
+  document.getElementById('timer-display').textContent =
+    `${String(timerMins).padStart(2,'0')}:${String(timerSecs).padStart(2,'0')}`;
+}
+function updatePlayIcon() {
+  document.getElementById('play-icon').outerHTML = timerRunning
+    ? `<id="play-icon"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></id>`
+    : `<polygon id="play-icon" points="6,4 20,12 6,20" fill="currentColor"/>`;
+}
+let elapsed=0;
+function toggleTimer() {
+  if(timerRunning) {
+    clearInterval(timerInterval); timerRunning=false;
+  } else {
+    timerRunning=true;
+    timerInterval=setInterval(()=>{
+      if(timerSecs===0) {
+        if(timerMins===0) { timerComplete(); return; }
+        timerMins--; timerSecs=59;
+      } else { timerSecs--; }
+      elapsed++;
+      updateTimerDisplay();
+      const remaining = timerMins*60+timerSecs;
+      ring.style.strokeDashoffset = ((remaining/timerTotal)*CIRC).toFixed(2);
+    },1000);
+  }
+  // swap icon manually
+  const btn = document.getElementById('timer-play-btn');
+  btn.innerHTML = timerRunning
+    ? `<svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><polygon points="6,4 20,12 6,20"/></svg>`;
+}
+function resetTimer() {
+  clearInterval(timerInterval); timerRunning=false;
+  const m = currentMode==='custom'?(parseInt(document.getElementById('custom-mins').value)||1):
+            currentMode==='short'?5:currentMode==='long'?15:25;
+  timerTotal=m*60; timerMins=m; timerSecs=0; elapsed=0;
+  updateTimerDisplay(); ring.style.strokeDashoffset='0';
+  document.getElementById('timer-play-btn').innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><polygon points="6,4 20,12 6,20"/></svg>`;
+}
+function skipTimer() { timerComplete(); }
+function timerComplete() {
+  clearInterval(timerInterval); timerRunning=false;
+  const minsCompleted = Math.ceil((timerTotal-timerMins*60-timerSecs)/60) || Math.floor(elapsed/60);
+  if(currentMode==='focus') {
+    state.focusSessions++;
+    state.focusMins += Math.floor(elapsed/60);
+    addXP(50);
+    updateStreak();
+    showToast('🎯','Focus session done!',`+50 XP · ${Math.floor(elapsed/60)} min focused`);
+    save(); renderStats();
+  } else {
+    showToast('☕','Break over!','Ready to lock back in?');
+  }
+  elapsed=0;
+  resetTimer();
+  document.getElementById('timer-play-btn').innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><polygon points="6,4 20,12 6,20"/></svg>`;
+}
+function setVibe(el, vibe) {
+  document.querySelectorAll('.vibe-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ══════════════════════════════
+//  XP + STREAK
+// ══════════════════════════════
+function addXP(amt) {
+  state.xp += amt;
+  save();
+}
+function getLevel() { return Math.floor(state.xp/100)+1; }
+function updateStreak() {
+  const today = new Date().toDateString();
+  if(state.lastActiveDate !== today) {
+    const yesterday = new Date(Date.now()-86400000).toDateString();
+    if(state.lastActiveDate===yesterday || !state.lastActiveDate) state.streak++;
+    state.lastActiveDate=today;
+    const dow = new Date().getDay();
+    state.weekDone[dow]=true;
+    save();
+  }
+}
+
+// ══════════════════════════════
+//  STATS RENDER
+// ══════════════════════════════
+function renderStats() {
+  const lvl = getLevel();
+  const xpInLevel = state.xp % 100;
+  document.getElementById('level-display').textContent = lvl;
+  document.getElementById('xp-display').textContent = `${state.xp} XP`;
+  document.getElementById('xp-next').textContent = `${100-xpInLevel} XP to next level`;
+  document.getElementById('xp-fill').style.width = xpInLevel+'%';
+  document.getElementById('stat-streak').textContent = state.streak;
+  document.getElementById('stat-tasks').textContent = state.totalTasksDone;
+  document.getElementById('stat-sessions').textContent = state.focusSessions;
+  document.getElementById('stat-mins').textContent = state.focusMins;
+}
+function renderWeek() {
+  const days=['S','M','T','W','T','F','S'];
+  const today = new Date().getDay();
+  document.getElementById('week-row').innerHTML = days.map((d,i)=>`
+    <div class="day-dot">
+      <div class="dot ${state.weekDone[i]?'done':''} ${i===today?'today':''}">${state.weekDone[i]?'✓':d}</div>
+      <div class="day-lbl">${d}</div>
+    </div>`).join('');
+}
+function resetStats() {
+  if(confirm('Reset all data?')) {
+    state={tasks:[],streak:0,lastActiveDate:null,xp:0,totalTasksDone:0,focusSessions:0,focusMins:0,weekDone:[false,false,false,false,false,false,false],quoteIndex:0};
+    save(); renderStats(); renderWeek(); renderTasks();
+  }
+}
+
+// ══════════════════════════════
+//  MOTIVATION
+// ══════════════════════════════
+function renderMotivation() {
+  const q = QUOTES[state.quoteIndex % QUOTES.length];
+  document.getElementById('quote-text').textContent = `"${q.t}"`;
+  document.getElementById('quote-attr').textContent = `— ${q.a}`;
+  document.getElementById('reminders-list').innerHTML = REMINDERS.map(r=>`
+    <div class="remind-card">
+      <div class="remind-icon">${r.icon}</div>
+      <div>
+        <div class="remind-text">${r.t}</div>
+        <div class="remind-sub">${r.s}</div>
+      </div>
+    </div>`).join('');
+}
+function newQuote() {
+  state.quoteIndex = (state.quoteIndex+1)%QUOTES.length;
+  save();
+  const q = QUOTES[state.quoteIndex];
+  document.getElementById('quote-text').textContent = `"${q.t}"`;
+  document.getElementById('quote-attr').textContent = `— ${q.a}`;
+}
+function twoMinRule() {
+  goTo('timer');
+  resetTimerTo(120,'2 MIN SPRINT');
+  const chips = document.querySelectorAll('.mode-chip');
+  chips.forEach(c=>c.classList.remove('sel'));
+}
+
+// ══════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════
+const SCREENS = {home:'screen-home',timer:'screen-timer',stats:'screen-stats',motive:'screen-motive'};
+const NAVS = {home:'nav-home',timer:'nav-timer',stats:'nav-stats',motive:'nav-motive'};
+function goTo(id) {
+  Object.values(SCREENS).forEach(s=>document.getElementById(s).classList.remove('active'));
+  Object.values(NAVS).forEach(n=>document.getElementById(n).classList.remove('active'));
+  document.getElementById(SCREENS[id]).classList.add('active');
+  document.getElementById(NAVS[id]).classList.add('active');
+  if(id==='stats'){renderStats();renderWeek();}
+}
+
+// ══════════════════════════════
+//  TOAST
+// ══════════════════════════════
+let toastTimeout;
+function showToast(icon,title,sub) {
+  const t=document.getElementById('toast');
+  document.getElementById('toast-icon').textContent=icon;
+  document.getElementById('toast-title').textContent=title;
+  document.getElementById('toast-sub').textContent=sub;
+  clearTimeout(toastTimeout);
+  t.classList.add('show');
+  toastTimeout=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ══════════════════════════════
+//  ANCHOR CHECK (every 20 min)
+// ══════════════════════════════
+setInterval(()=>{
+  showToast('🧠','Anchor check','What are you working on right now?');
+},20*60*1000);
+
+init();
+</script>
+</body>
+</html>
